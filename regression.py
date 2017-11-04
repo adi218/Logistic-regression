@@ -20,7 +20,7 @@ def mle(trn_y, trn_x, weight):
     return total_mle
 
 
-def gradient(trn_y, trn_x, weight):
+def gradient(trn_y, trn_x, weight, lamb):
     grad = np.zeros(trn_x.shape)
     for i in range(trn_y.size):
         prediction = np.dot(weight, trn_x[i, :].T)
@@ -30,18 +30,55 @@ def gradient(trn_y, trn_x, weight):
     combined_gradient = np.zeros((1, grad.shape[1]))
     for i in range(grad.shape[0]):
         combined_gradient += grad[i, :]
+    combined_gradient = combined_gradient - lamb * combined_gradient
     return combined_gradient
 
 
-def gradient_descent(trn_y, trn_x, learning_rate):
+def gradient_descent(trn_y, trn_x, learning_rate, selected_lamb):
     weight = np.zeros((1, trn_x.shape[1]))
     for i in range(5000):
-        weight += learning_rate*gradient(trn_y, trn_x, weight)
+        weight += learning_rate*gradient(trn_y, trn_x, weight, selected_lamb)
         if i % 500 == 0:
             print(i, 'mle', mle(trn_y, trn_x, weight))
             print(weight)
     return weight
 
+
+def regularize(x, y, k_f, learning_rate_f):
+    lambdas = []
+    gen = 0
+    losses = []
+    total_loss = []
+    while gen < 0.03:
+        lambdas.append(gen)
+        gen = gen + 0.01
+    for i in range(len(lambdas)):
+        probable = lambdas[i]
+        for l in range(k_f):
+            idx = []
+            for m in range(int(x.shape[0] / k_f)):
+                idx.append(int(l*x.shape[0] / k_f + m))
+            # print(idx)
+            tst_x = x[idx, :]
+            tst_y = y[idx, :]
+            trn_idx = []
+            for j in range(x.shape[0]):
+                if j not in idx:
+                    trn_idx.append(j)
+            trn_x = x[trn_idx, :]
+            trn_y = y[trn_idx, :]
+
+            theta_temp = gradient_descent(trn_y, trn_x, learning_rate_f, probable)
+            loss_temp = mle(tst_y, tst_x, theta_temp)
+            losses.append(loss_temp)
+        temp_loss = 0
+        for a in losses:
+            temp_loss += a
+        total_loss.append(temp_loss/k_f)
+        losses = []
+        print(probable, total_loss[i])
+    print(lambdas[total_loss.index(min(total_loss))], (min(total_loss)))
+    return lambdas[total_loss.index(min(total_loss))]
 
 data = scipy.io.loadmat('data2.mat')
 x_trn = np.asmatrix(data['X_trn'])
@@ -54,8 +91,10 @@ y_tst = np.asmatrix(data['Y_tst'])
 intercept = np.ones((x_tst.shape[0], 1))
 x_tst = np.append(x_tst, intercept, 1)
 
+learning_rate = 0.01
 
-weights = gradient_descent(y_trn, x_trn, 0.009)
+lam = regularize(x_trn, y_trn, 2, learning_rate)
+weights = gradient_descent(y_trn, x_trn, learning_rate, lam)
 prediction_tst = np.matmul(x_tst, weights.T)
 prob_tst = np.zeros(y_tst.shape)
 # # print(prediction)
