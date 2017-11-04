@@ -9,7 +9,7 @@ def sigmoid(z):
     return val
 
 
-def mle(trn_y, trn_x, weight):
+def mle(trn_y, trn_x, weight, lam):
     individual_mle = np.zeros(trn_y.shape)
     for i in range(trn_y.size):
         individual_mle[i, 0] = -1*(trn_y[i, 0]*np.dot(trn_x[i, :], weight.T) -
@@ -17,6 +17,7 @@ def mle(trn_y, trn_x, weight):
     total_mle = 0
     for i in range(individual_mle.size):
         total_mle += individual_mle[i, 0]
+    total_mle = total_mle + np.linalg.norm(lam*weight.T, ord=2)
     return total_mle
 
 
@@ -39,7 +40,7 @@ def gradient_descent(trn_y, trn_x, learning_rate, selected_lamb):
     for i in range(5000):
         weight += learning_rate*gradient(trn_y, trn_x, weight, selected_lamb)
         if i % 500 == 0:
-            print(i, 'mle', mle(trn_y, trn_x, weight))
+            print(i, 'mle', mle(trn_y, trn_x, weight, selected_lamb))
             print(weight)
     return weight
 
@@ -69,7 +70,7 @@ def regularize(x, y, k_f, learning_rate_f):
             trn_y = y[trn_idx, :]
 
             theta_temp = gradient_descent(trn_y, trn_x, learning_rate_f, probable)
-            loss_temp = mle(tst_y, tst_x, theta_temp)
+            loss_temp = mle(tst_y, tst_x, theta_temp, probable)
             losses.append(loss_temp)
         temp_loss = 0
         for a in losses:
