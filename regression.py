@@ -50,9 +50,9 @@ def regularize(x, y, k_f, learning_rate_f):
     gen = 0
     losses = []
     total_loss = []
-    while gen < 0.03:
+    while gen < 0.3:
         lambdas.append(gen)
-        gen = gen + 0.01
+        gen = gen + 0.1
     for i in range(len(lambdas)):
         probable = lambdas[i]
         for l in range(k_f):
@@ -81,7 +81,8 @@ def regularize(x, y, k_f, learning_rate_f):
     print(lambdas[total_loss.index(min(total_loss))], (min(total_loss)))
     return lambdas[total_loss.index(min(total_loss))]
 
-data = scipy.io.loadmat('data2.mat')
+
+data = scipy.io.loadmat('data1.mat')
 x_trn = np.asmatrix(data['X_trn'])
 intercept = np.ones((x_trn.shape[0], 1))
 x_trn = np.append(x_trn, intercept, 1)
