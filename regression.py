@@ -37,9 +37,9 @@ def gradient(trn_y, trn_x, weight, lamb):
 
 def gradient_descent(trn_y, trn_x, learning_rate, selected_lamb):
     weight = np.zeros((1, trn_x.shape[1]))
-    for i in range(5000):
+    for i in range(10000):
         weight += learning_rate*gradient(trn_y, trn_x, weight, selected_lamb)
-        if i % 500 == 0:
+        if i % 250 == 0:
             print(i, 'mle', mle(trn_y, trn_x, weight, selected_lamb))
             print(weight)
     return weight
@@ -50,7 +50,7 @@ def regularize(x, y, k_f, learning_rate_f):
     gen = 0
     losses = []
     total_loss = []
-    while gen < 0.3:
+    while gen <= 0.3:
         lambdas.append(gen)
         gen = gen + 0.1
     for i in range(len(lambdas)):
@@ -59,7 +59,7 @@ def regularize(x, y, k_f, learning_rate_f):
             idx = []
             for m in range(int(x.shape[0] / k_f)):
                 idx.append(int(l*x.shape[0] / k_f + m))
-            # print(idx)
+            print(idx)
             tst_x = x[idx, :]
             tst_y = y[idx, :]
             trn_idx = []
@@ -82,7 +82,19 @@ def regularize(x, y, k_f, learning_rate_f):
     return lambdas[total_loss.index(min(total_loss))]
 
 
-data = scipy.io.loadmat('data1.mat')
+def classification_error(y, prob):
+    count = 0
+    for i in range(y.size):
+        if prob[i, 0] > 0.5:
+            if y[i, 0] != 1:
+                count += 1
+        else:
+            if y[i, 0] != 0:
+                count += 1
+    return count
+
+
+data = scipy.io.loadmat('data2.mat')
 x_trn = np.asmatrix(data['X_trn'])
 intercept = np.ones((x_trn.shape[0], 1))
 x_trn = np.append(x_trn, intercept, 1)
@@ -93,52 +105,60 @@ y_tst = np.asmatrix(data['Y_tst'])
 intercept = np.ones((x_tst.shape[0], 1))
 x_tst = np.append(x_tst, intercept, 1)
 
-learning_rate = 0.01
+learning_rate = 0.001
+k = 2
 
-lam = regularize(x_trn, y_trn, 2, learning_rate)
+
+lam = regularize(x_trn, y_trn, k, learning_rate)
 weights = gradient_descent(y_trn, x_trn, learning_rate, lam)
+print(weights)
+
+
 prediction_tst = np.matmul(x_tst, weights.T)
 prob_tst = np.zeros(y_tst.shape)
-# # print(prediction)
 for i in range(prediction_tst.size):
     prob_tst[i, 0] = sigmoid(prediction_tst[i, 0])
-    # if prob_tst[i, 0] <= 0.5:
-    #     prob_tst[i, 0] = 0
-    # else:
-    #     prob_tst[i, 0] = 1
-#     # print(prob[i, 0], y_tst[i, 0])
-# print(weights)
-#
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-ax1.scatter([x_tst[:, 0]], [y_tst[:, 0]], c='blue', label='given')
-ax1.scatter([x_tst[:, 0]], [prob_tst[:, 0]], c='red', label='predicted')
-plt.legend(loc='upper left')
+
+error = classification_error(y_tst, prob_tst)
+print(error, 'error_tst')
+
+x1 = np.zeros((x_tst.shape[0], 1))
+for i in range(y_tst.size):
+    x1[i, 0] = -1*(weights[0, 0]*x_tst[i, 0] + weights[0, 2])/weights[0, 1]
+for i in range(y_tst.size):
+    if y_tst[i, 0] == 0:
+        plt.scatter([x_tst[i, 0]], [x_tst[i, 1]], c='red')
+    else:
+        plt.scatter([x_tst[i, 0]], [x_tst[i, 1]], c='blue')
+plt.plot(x_tst[:, 0], x1[:, 0], color='black')
+plt.title('test data and boundary for dataset1')
 plt.show()
+
 
 prediction_trn = np.matmul(x_trn, weights.T)
 prob_trn = np.zeros(y_trn.shape)
-# print(prediction)
 for i in range(prediction_trn.size):
     prob_trn[i, 0] = sigmoid(prediction_trn[i, 0])
-    # print(prob[i, 0], y_tst[i, 0])
-# print(weights)
+
+error = classification_error(y_trn, prob_trn)
+print(error, 'error_trn')
 
 x2 = np.zeros((x_trn.shape[0], 1))
 for i in range(y_trn.size):
-    x2[i, 0] = -1*(weights[0, 0]*x_trn[i, 0])/weights[0, 1]
+    x2[i, 0] = -1*(weights[0, 0]*x_trn[i, 0] + weights[0, 2])/weights[0, 1]
 for i in range(y_trn.size):
     if y_trn[i, 0] == 0:
         plt.scatter([x_trn[i, 0]], [x_trn[i, 1]], c='red')
     else:
         plt.scatter([x_trn[i, 0]], [x_trn[i, 1]], c='blue')
 plt.plot(x_trn[:, 0], x2[:, 0], color='black')
+plt.title('train data and boundary for dataset1',)
 plt.ylim([-1, 5])
 plt.show()
 
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-ax1.scatter([x_trn[:, 0]], [y_trn[:, 0]], c='blue', label='given')
-ax1.scatter([x_trn[:, 0]], [prob_trn[:, 0]], c='red', label='predicted')
-plt.legend(loc='upper left')
-plt.show()
+# fig = plt.figure()
+# ax1 = fig.add_subplot(111)
+# ax1.scatter([x_trn[:, 0]], [y_trn[:, 0]], c='blue', label='given')
+# ax1.scatter([x_trn[:, 0]], [prob_trn[:, 0]], c='red', label='predicted')
+# plt.legend(loc='upper left')
+# plt.show()
